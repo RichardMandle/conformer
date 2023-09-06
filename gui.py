@@ -4,6 +4,7 @@ from tkinter import ttk, filedialog
 from tqdm import tqdm
 import numpy as np
 
+import csv
 import json
 import io
 from collections import defaultdict
@@ -25,7 +26,6 @@ class ConformerGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Conformer GUI")
-
         self.notebook = ttk.Notebook(self.root)
 
         self.tab1 = ttk.Frame(self.notebook)
@@ -54,6 +54,8 @@ class ConformerGUI:
         self.loaded_mol = None
         self.drawer = None
         self.highlights = []
+        self.settings = {}
+        
         
         # set label options
         self.selected_label = tk.Label(root, text="Selected Atoms:")
@@ -62,7 +64,7 @@ class ConformerGUI:
         self.atom_label.pack()
         self.selected_atoms_label = tk.Label(root, text="")
         self.selected_atoms_label.pack()
- 
+        
         # Load and update settings from JSON
         self.gaussian_path, self.pymol_path = self.load_settings()  # Pass the entries to the method
         if entry_gaussian:
@@ -360,11 +362,101 @@ class ConformerGUI:
 
         # Set up the trace to call update_additional_settings when the evaluation method changes
         self.selected_eval_method.trace("w", update_additional_settings)
+        
+        # Create a button for advanced settings
+        advanced_settings_button = tk.Button(settings_grid, text="Advanced Settings", command=self.show_advanced_settings)
+        advanced_settings_button.grid(row=len(settings_labels) + 7, columnspan=2, pady=10)
 
         # Create a button to trigger the conformer search
         search_button = tk.Button(settings_grid, text="Start Conformer Search", command=self.start_conformer_search)
         search_button.grid(row=len(settings_labels) + 6, columnspan=2, pady=20)
+        
+    def show_advanced_settings(self):
+        # Create a popup window for advanced settings
+        advanced_settings_window = tk.Toplevel(self.root)
+        advanced_settings_window.title("Advanced Settings")
 
+        # Create and layout the advanced settings widgets
+        options_frame = ttk.LabelFrame(advanced_settings_window, text="Advanced Options")
+        options_frame.grid(row=0, column=0, padx=10, pady=10)
+
+        # Create and add the widgets for the advanced options
+        advanced_options = [
+            ("RMS Threshold for Pruning", "0.33", "0.33"),
+            ("Random Seed", "61453", "61453"),
+            ("Use Torsion Preferences", ["True", "False"], "True"),
+            ("Use Chemical Knowledge", ["True", "False"], "True"),
+            ("Use Random Coords", ["True", "False"], "False"),
+            ("Do MMFF Optimization", ["True", "False"], "False"),
+        ]
+
+        mmff_options_frame = None  # Initialize as None
+        option_vars = {}  # Create a dictionary to store option variables
+        mmff_option_vars = {}  # Create a dictionary to store MMFF option variables
+
+        for row, (label_text, values, default_value) in enumerate(advanced_options):
+            label = tk.Label(options_frame, text=(label_text + ':'))
+            label.grid(row=row, column=0, padx=10, pady=5, sticky="e")
+
+            option_var = None  # Initialize option_var as None
+
+            if isinstance(values, list):
+                option_var = tk.StringVar(value=default_value)
+                option_menu = ttk.Combobox(options_frame, textvariable=option_var, values=values)
+                option_menu.grid(row=row, column=1, padx=10, pady=5, sticky="w")
+            else:
+                option_var = tk.StringVar(value=default_value)
+                entry = tk.Entry(options_frame, textvariable=option_var, width=30)
+                entry.grid(row=row, column=1, padx=10, pady=5, sticky="w")
+
+            # Store the option variable in the dictionary
+            option_vars[label_text] = option_var
+
+            if label_text == "Do MMFF Optimization:":
+                def show_mmff_options():
+                    nonlocal mmff_options_frame
+                    if mmff_options_frame is not None:
+                        mmff_options_frame.destroy()
+                    if option_var.get() == "True":
+                        mmff_options_frame = ttk.LabelFrame(advanced_settings_window, text="MMFF Options")
+                        mmff_options_frame.grid(row=row + 1, column=0, padx=10, pady=10)
+
+                        mmff_advanced_options = [
+                            ("Energy Threshold (kcal/mol)", "100"),
+                            ("Max Iterations", "500"),
+                        ]
+
+                        for mmff_row, (mmff_label_text, mmff_default_value) in enumerate(mmff_advanced_options):
+                            mmff_label = tk.Label(mmff_options_frame, text=mmff_label_text)
+                            mmff_label.grid(row=mmff_row, column=0, padx=10, pady=5, sticky="e")
+
+                            mmff_entry_var = tk.StringVar(value=mmff_default_value)
+                            mmff_entry = tk.Entry(mmff_options_frame, textvariable=mmff_entry_var, width=30)
+                            mmff_entry.grid(row=mmff_row, column=1, padx=10, pady=5, sticky="w")
+
+                            mmff_option_vars[mmff_label_text] = mmff_entry_var
+
+                option_var.trace_add("write", lambda *args: show_mmff_options())
+                
+                    
+        def save_advanced_settings():
+            # Retrieve and save the advanced settings here
+            # Access the values of the widgets using their corresponding variables
+            for label_text, option_var in option_vars.items():
+                self.settings[label_text] = option_var.get()
+
+            if mmff_options_frame:
+                mmff_settings = {}
+                for mmff_label_text, mmff_entry_var in mmff_option_vars.items():
+                    mmff_settings[mmff_label_text] = mmff_entry_var.get()
+                self.settings["MMFF Options"] = mmff_settings
+
+            print("Advanced Settings:", self.settings)
+
+        save_button = tk.Button(advanced_settings_window, text="Save Settings", command=save_advanced_settings)
+        save_button.grid(row=len(advanced_options) + 1, column=0, columnspan=2, pady=10)
+        
+        
     def start_conformer_search(self):
         # Gather inputs from the settings entries
         num_conformers = int(self.settings_entries[0].get())
@@ -376,13 +468,34 @@ class ConformerGUI:
         gaussian_options = ""
         gaussian_nproc = ""
         gaussian_vmem = ""
-
+        
         if selected_eval_method == self.eval_methods[-1]: # if its the gaussian method then do this
             gaussian_job = True 
             gaussian_options = self.additional_settings_widgets[1].get()
             gaussian_nproc = self.additional_settings_widgets[3].get()
             gaussian_vmem = self.additional_settings_widgets[5].get()
-           
+        
+        rms_threshold = float(0.33) # TO DO - this is turning into a tuple, why?? TO DO
+        use_torsion_pref = True
+        use_knowledge = True
+        use_random_coords = False
+        random_seed = int(61453)
+        opt = False
+        max_opt_iter=5000
+        min_energy_MMFF=500
+            
+        if self.settings:
+            print('Using Advanced Settings')
+            rms_threshold = float(self.settings['RMS Threshold for Pruning'])
+            use_torsion_pref = self.settings['Use Torsion Preferences'] == True
+            use_knowledge = self.settings['Use Chemical Knowledge'] == True
+            use_random_coords = self.settings['Use Random Coords'] == True
+            random_seed = int(self.settings['Random Seed'])
+            opt = self.settings['Do MMFF Optimization'] == True
+            if opt == True:
+                max_opt_iter=float(self.settings['Max Iterations'])
+                min_energy_MMFF= float(self.settings['Energy Threshold (kcal/mol)'])
+        
         atoms=[]
         vec1 = ''
         vec2 = ''
@@ -402,6 +515,7 @@ class ConformerGUI:
             vec2 = self.smarts_group2_entry.get()
 
         # Call conf.conf_search with the gathered inputs
+        # need to update with additional parameters from advanced settings
         self.mol_conf,self.energy,self.angle,name = conformer.conf_search(
             mol=self.loaded_mol,  
             vec_def_method=vector_definition_method,
@@ -412,10 +526,19 @@ class ConformerGUI:
             vector2=vec2,
             n_conf=num_conformers,
             name=job_name,
+            rms_thresh = rms_threshold,
+            use_torsion_pref = use_torsion_pref,
+            use_knowledge = use_knowledge,
+            use_random_coords = use_random_coords,
+            random_seed = random_seed,
+            opt = opt,
+            max_iter= max_opt_iter,
+            min_energy_MMFF= min_energy_MMFF,
             Gauss=gaussian_job,
             options=(gaussian_options),
             cores=(gaussian_nproc),
-            ram=(gaussian_vmem)
+            ram=(gaussian_vmem),
+            write_only = False # TO DO - this is hard coded, remember to expose it!!
         )
         if self.angle:
             print('Successful completion of conformer search')
@@ -427,18 +550,33 @@ class ConformerGUI:
         tab3_label.pack(pady=20)
 
         # Create canvas widgets for histograms and plots
-        self.canvas_histogram = tk.Canvas(self.tab3, width=400, height=300)
+        self.canvas_histogram = tk.Canvas(self.tab3, width=250, height=200)
         self.canvas_histogram.pack(side=tk.LEFT, padx=10, pady=10)
 
-        self.canvas_plot = tk.Canvas(self.tab3, width=400, height=300)
-        self.canvas_plot.pack(side=tk.LEFT, padx=10, pady=10)
+        self.canvas_radii = tk.Canvas(self.tab3, width=250, height=200)
+        self.canvas_radii.pack(side=tk.LEFT, padx=10, pady=10)
 
-        bin_label = tk.Label(self.tab3, text="Number of Bins:")
+        bin_label = tk.Label(self.tab3, text="Width of Histogram Bins:")
         bin_label.pack()
 
         self.bin_slider = tk.Scale(self.tab3, from_=1, to=100, orient="horizontal")
         self.bin_slider.set(10)  # Set an initial value
         self.bin_slider.pack()
+
+        # Entry widget for temperature input
+        temp_label = tk.Label(self.tab3, text="Temperature / K:")
+        temp_label.pack()
+        self.temp_entry = tk.Entry(self.tab3)
+        self.temp_entry.insert(0, "298")  # default to 298 K, why not!
+        self.temp_entry.pack()
+
+        # Dropdown menu for fitting Gaussian
+        fit_gaussian_label = tk.Label(self.tab3, text="Fit Gaussian?")
+        fit_gaussian_label.pack()
+        self.fit_gaussian_var = tk.StringVar(self.tab3)
+        self.fit_gaussian_var.set("Yes")  # Set an initial value
+        fit_gaussian_option = tk.OptionMenu(self.tab3, self.fit_gaussian_var, "Yes", "No")
+        fit_gaussian_option.pack()
 
         # Button to generate histograms and plots
         generate_button = tk.Button(self.tab3, text="Generate Histograms and Plots", command=self.generate_histograms_and_plots)
@@ -453,47 +591,57 @@ class ConformerGUI:
         save_plot_button.pack()
 
     def generate_histograms_and_plots(self):
-        
-        num_bins = self.bin_slider.get() # Get the selected number of bins from the slider
+        num_bins = self.bin_slider.get()  # Get the selected number of bins from the slider
+        temperature = float(self.temp_entry.get())  # Get user-input temperature
+        fit_gaussian = (self.fit_gaussian_var.get() == "Yes")  # Check fit Gaussian option
 
         #deltaE_KJ, probability, x, y 
-        returned_fig = conformer.calc_bend_hist(self.angle, 
+        self.returned_fig = conformer.calc_bend_hist(self.angle, 
                                                 self.energy, 
-                                                fit_gaussian=True, 
-                                                name='NoName', 
-                                                Temp=298, 
+                                                fit_gaussian=fit_gaussian, 
+                                                name=self.settings_entries[1].get(), 
+                                                Temp=temperature, 
                                                 BinSteps=num_bins)
+
+        self.returned_radii_fig = conformer.rad_gyr_gen(self.mol_conf,
+                                                        self.energy, 
+                                                        self.angle, 
+                                                        name=self.settings_entries[1].get(),
+                                                        show_plot=False)
+
 
         # Destroy the previous canvas widgets to remove the previous plots
         for widget in self.canvas_histogram.winfo_children():
             widget.destroy()
 
-        for widget in self.canvas_plot.winfo_children():
+        for widget in self.canvas_radii.winfo_children():
             widget.destroy()
 
-        # Plot histogram on the canvas_histogram
-        #figure = plt.figure(figsize=(4, 3), dpi=100)
-        #plt.hist(self.angle, bins=num_bins)
-        #plt.xlabel('Bend Angle / Degrees')
-        #plt.ylabel('Frequency')
-        #plt.title('Bend/Angle histogram')
-        # Embed the returned figure in the Tkinter canvas
-        canvas_img = FigureCanvasTkAgg(returned_fig, master=self.canvas_histogram)
+        canvas_img = FigureCanvasTkAgg(self.returned_fig, master=self.canvas_histogram)
+        canvas_img.get_tk_widget().pack()
+        
+        canvas_img = FigureCanvasTkAgg(self.returned_radii_fig, master=self.canvas_radii)
         canvas_img.get_tk_widget().pack()
 
         # Plot radius of gyration vs angle on the canvas_plot
         # to do
 
     def save_data_as_csv(self):
-        # Implement code to save data as CSV
-        # You can use Python's CSV library to write data to a CSV file
-        pass
+        data = [['Angle / Deg', [angle for angle in self.angle]], ['dE / Kj Mol', [energy for energy in self.energy]]]
 
+        # Create a file dialog for saving the CSV file
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV Files", "*.csv")])
 
+        if file_path:
+            with open(file_path, 'w', newline='') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerows(data)
+            
     def save_plot_as_png(self):
-        # Implement code to save the plot as a PNG image
-        # You can use the savefig function from matplotlib
-        pass
+        file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG Image", "*.png")])
+        if file_path:
+            self.returned_fig.savefig(file_path)
+
 
     def create_tab4_content(self, entry_gaussian, entry_pymol):
 

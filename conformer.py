@@ -56,7 +56,7 @@ def get_conformer_methods(Print=False):
                        'srETKDGv3',
                       ]
     
-    if print == False:
+    if print == True:
         print('Available conformer search methods:')
         for method in embeded_methods:
             print(method)
@@ -67,12 +67,31 @@ def conf_gen(mol,
              num_of_conformer=500,
              embeded_method='ETKDGv2', 
              name='NoName',
+             rms_thresh = 0.33,
+             use_torsion_pref = True,
+             use_knowledge = True,
+             use_random_coords = False,
+             random_seed = 61453,
+             opt = False,
              max_iter=5000,
-             min_energy_MMFF=500,
-             opt = False):
-    
-    # a list of embeded methods; if the embeded_method isn't here, we'll
-    # simply go for a standard one.
+             min_energy_MMFF=500,):
+
+    '''
+    This function makes the call to rdkit to do a conformer generation
+    Args:
+    mol - the mol object to generate conformers for
+    num_of_conformers - the number of conformers we want to generate
+    name - the name of the job (used only when then writing output to terminal)
+    rms_thresh - the threshold of RMS used to prune identical conformers.
+    use_torsion_pref - use knowledge of preferred torsions in conformer generate
+    use_knowledge - use basic chemical knowledge (e.g. flat benzene)
+    use_random_coords - generates conformers by randomising the coordinates?
+    randokm_seed - ability to set a different random seed (give integer)
+    opt - calls a geometry optimizer using MMFF in rdkit (default = False)
+    max_iter - if opt=True, the maximum iterations we'll use in our optimisation 
+    min_energy_MMFF - the minimum energy to accept for a conformer if opt = True (in kcal mol?)
+    '''
+
 
     embeded_methods = get_conformer_methods(Print=False)
     
@@ -83,12 +102,12 @@ def conf_gen(mol,
     print('\nusing the ' + embeded_method + ' method')
     
     ps = getattr(AllChem, embeded_method)()
-    ps.pruneRmsThresh = 0.33
-
-    ps.useExpTorsionAnglePrefs = True
-    ps.useBasicKnowledge = True
-    ps.useRandomCoords=False
-    ps.randomSeed = 0xf00d
+    
+    ps.pruneRmsThresh = rms_thresh
+    ps.useExpTorsionAnglePrefs = use_torsion_pref
+    ps.useBasicKnowledge = use_knowledge
+    ps.useRandomCoords=use_random_coords
+    ps.randomSeed = random_seed
     
     AllChem.EmbedMultipleConfs(mol, num_of_conformer, ps)
     
@@ -117,7 +136,7 @@ def conf_gen(mol,
     
     return(mol,energy)
     
-def rad_gyr_gen(mol, energy, angle, name):
+def rad_gyr_gen(mol, energy, angle, name='NoName',show_plot=False):
     '''
     Generates a list of all the radii of gyration for the different 
     conformers in 'mol'
@@ -133,13 +152,16 @@ def rad_gyr_gen(mol, energy, angle, name):
     print(radii.mean(), radii.std(), len(radii))
     
     fig0, ax0 = plt.subplots()
-    plt.scatter(angle[1:],radii)
+    plt.scatter(angle,radii)
 
     plt.xlabel('Bend Angle / Degrees')
     plt.ylabel('Radius of Gyration ') 
     
-    plt.savefig(name + 'Gr_vs_angle.png', bbox_inches='tight')
-    
+    if show_plot == True:
+        plt.savefig(name + 'Gr_vs_angle.png', bbox_inches='tight')
+        plt.show()
+    else:
+        return fig0    
     return radii
     
 def find_bond_groups(smi):
@@ -227,6 +249,14 @@ def conf_search(mol,
                 vector2 = 'N#C',
                 n_conf=50,
                 name='NoName',
+                rms_thresh = 0.33,
+                use_torsion_pref = True,
+                use_knowledge = True,
+                use_random_coords = False,
+                random_seed = 61453,
+                opt = False,
+                max_iter=5000,
+                min_energy_MMFF=500,
                 g_path = None,
                 Gauss=False,
                 options='',
@@ -245,6 +275,8 @@ def conf_search(mol,
     g_path = path to Gaussian executable
     n_conf = number of conformers to generate
     name   = the name of the system, used for saving
+    
+    
     Gauss  = if is True, send confs to Gaussian for energy/optimisation (default = False)?
     
     if Gauss = True
@@ -254,10 +286,21 @@ def conf_search(mol,
         options    = Any other Gaussian options (e.g. GD3BJ, integral=ultrafine etc.)
     
     write_only lets us leave out the actual calculation and just prep the gaussian input files.
-    Code is inflexible for unsymmetrical systems, but would be an easy fix.
-    """
     
-    mol,energy = conf_gen(mol,n_conf,embeded_method,name)
+    """
+       
+    mol,energy = conf_gen(mol,
+                          n_conf,
+                          embeded_method,name,
+                          rms_thresh, 
+                          use_torsion_pref, 
+                          use_knowledge, 
+                          use_random_coords,
+                          random_seed, 
+                          opt, 
+                          max_iter, 
+                          min_energy_MMFF)
+
     
     angle = [] # Conformer Angle in Degrees
     if vec_def_method == 'atoms': 
@@ -395,7 +438,7 @@ def analyse_angles(hist,bin_edges):
     x_max = np.round(b_fit,2) 
     fwhm = np.round((2 * np.sqrt(2 * np.log(2)) * c_fit),2)   # Calculate the x-maximum and FWHM of the Gaussian
 
-    x = np.linspace(np.min(bin_edges), np.max(bin_edges), 1000)     # Generate x-values for the Gaussian curve
+    x = np.linspace(np.min(bin_centers), np.max(bin_centers), 1000)     # Generate x-values for the Gaussian curve
 
     y = maths.gaussian(x, a_fit, b_fit, c_fit)     # Compute the y-values for the Gaussian curve
 
