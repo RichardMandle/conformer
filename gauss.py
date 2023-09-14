@@ -6,7 +6,7 @@ import subprocess
 from tqdm import tqdm
 
 from rdkit import Chem
-
+from rdkit.Geometry import Point3D
 
 def write_gjf(mol,name='NoName',options='',nproc=1,vmem=1):
     """
@@ -113,6 +113,7 @@ def read_energy(GaussianOutputFile='NoName'):
     
     return(energy)    
     
+  
 def read_g_log(name='NoName'):
     """
     This function reads Gaussian output and takes the single-point energy ONLY
@@ -121,15 +122,13 @@ def read_g_log(name='NoName'):
     The code that looks for energy searches for a string ("SCF DONE: E(") - it is 
     not clear how robust this is, but it works for E(RAM1) calculations fine.
     
-    Sometimes gaussian gives you .out files, sometimes .log. This is configured
-    for .out files, because thats what my laptop is giving me today (17/1/23)
+    Function checks for both .out and .log files; other extensions are ignored    
     """
 
-    import glob 
-    
-    # make a list of *.out files we want to read  and their path 
-    path = r'*.out' # *** PAY ATTENTION TO Gauss FORMAT! ***
-    files = glob.glob(name+'/'+path)
+    files = glob.glob(name+'/'+r'*.out')
+    if files == []: # if empty, try looking for .log files instead
+        files = glob.glob(name+'/'+r'*.log')
+        
     energy = []
     
     for i in range(0,len(files)):
@@ -142,3 +141,68 @@ def read_g_log(name='NoName'):
         
     print(len(energy))    
     return(energy)
+
+def get_geometries(file_path,silent=True):
+    '''
+    basic function that extracts any and all geometries present in a Gaussian output file.
+    
+    These can be the output of an optimisation (e.g. all_geometries[-0], the last geometry)
+    They might be all geometries in an optimisation of some sort
+    
+    Args:
+    file_path - the file you want to read
+    
+    Returns:
+    all_geometries - the extracted geometry data from the "standard orientation" tables.
+    '''
+
+    all_geometries = [] # List to store the extracted lines
+
+    with open(file_path, 'r') as file:
+        file_text = file.read()
+        match_start = [m.start() for m in re.finditer('Standard orientation',file_text)]
+        match_finish = [n.start() for n in re.finditer('Rotational constants',file_text)]
+
+    for m in range(len(match_start)):
+        all_geometries.append(file_text[match_start[m]:match_finish[m]])
+    
+    if not silent:
+        print('I found ' + str(len(all_geometries)) + ' geometries in total in ' + file_path + '\n')
+
+    return all_geometries
+
+def update_coordinates(mol,conformer_id,new_coordinates):
+    '''
+    takes extracted geometry from get_geometries replaces the geometry in an rdkit mol conformer.
+
+    used if we have called an optimisation job in Gaussian and want to update the rdkit object with the
+    new geometry (how likely we are to do this is debatable).
+    
+    Args:
+    mol                 - the mol object containing conformers we want to update
+    conformer_id        - the index of the conformer to update
+    new_coordinates     - the coordinates we will be updating with
+    
+    
+    Returns
+    coords - .gjf formatted coordinates.
+    '''
+    
+    lines = extracted_geometry.strip().split('\n')
+    data_lines = lines[5:-1]  # Skipping header and footer lines
+
+    atomic_data = []
+    coords = [] # empty array for coordinate data
+    # Extract atomic number, element symbol, and coordinates
+    for line in data_lines:
+        columns = line.split()
+        atomic_number = int(columns[1])
+        element_symbol = atomic_number_to_symbol(atomic_number)
+        x, y, z = float(columns[3]), float(columns[4]), float(columns[5])
+        atomic_data.append((element_symbol, x, y, z))
+
+    # Print the extracted data
+    for symbol, x, y, z in atomic_data:
+        coords.append(f"{symbol}         {x} {y} {z}")
+        
+    return(coords)

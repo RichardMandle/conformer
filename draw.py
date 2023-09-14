@@ -1,87 +1,64 @@
+import subprocess
 from rdkit import Chem
-from PIL import Image, ImageChops, ImageDraw
-from rdkit.Chem import Draw, AllChem, rdCoordGen
+from rdkit.Chem import PyMol
 
-'''
-functions pertaining to drawing chemical structures.
+def pymol_draw(mol, path, name='NoName', style=True, ray=False, grid=True, start=0, end=-1):
 
-Removed functions:
-abbreviation engine - this is the same as the one used in ChemLabel; it makes no sense to abbreviate atom groups when
-                      we care explicitly about connectivity.
-                      
-'''
-
-def align_mol(MolObject):
-    '''
-    Function for 'aligning' a molecule when drawn by RDkit.
-    we have a list of templates that we look for. These are SMARTS strings, e.g.
-    https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html
+    """
+    Function for calling pymol and making a nice image
+    having style = 'yes' will give a standard image in the UoL-SMP style
+    raytacing defaults to off (ray='no') but can be called ('yes') or run externally in PyMol
     
-    We look for a match in our structure, and align to this.
+    Make sure you update the pymol path in the os.system call
     
-    The Templates are listed in terms of decreasing priority, i.e. [0] is the highest
-    priority.
+    you can specify start = i and end = m, where i and m are integers, to
+    output only conformers between the ith and mth to Pymol. Python
+    indexes from zero (i.e. hte first conformer is no 0, the 2nd is 1 etc.)
     
-    We basically want the molecule to have its length parallel to the tape length; so
-    mostly ring-to-ring bonds are good for alignment. Might be an argument for some
-    odd-heterocycles to go at the top (e.g. oxadiazole).
-    '''
-
-    Templates = ['c-c',       # aromatic-to-aromatic bond (E.g. biphenyl)
-                'c-[!c;R]',   # aromatic to cycic hydrocarbon
-                'c-C',       # aromatic-to-alicyclic
-                '[R]-[R]',    # any ring-to-ring bond
-                '[C;R]!@[C;R]', # bond between saturated rings.
-                '[c&H0aac&H0]',   # substituted 1,4-carbons in a benzene ring
-                '[*;h1]~[C;R]@[C;R]@[C;R]@[C;R]',   # substituted 1,4-carbons in a saturated ring
-                '*#*',  # any tripple bond
-                ]
-    for n in range(1,20):
-        Templates.insert(0, '[R]-' + ('[!R]-')*n + '-[R]')
-
-    for template in Templates[::-1]:
-        tplt = Chem.MolFromSmarts(template)
-        if MolObject.GetSubstructMatches(tplt):
-            AllChem.Compute2DCoords(tplt) 
-            AllChem.GenerateDepictionMatching2DStructure(MolObject,tplt)
-
-    return(MolObject)
+    This function is painfully slow, is there a better way?
+    """
     
-def crop_img(filename):
-    '''
-    Code for automatically removing whitepsace from image.
-    
-    Credit:
-    https://stackoverflow.com/questions/10615901/trim-whitespace-using-pil
-    '''
-    im = Image.open(filename)
-    bg = Image.new(im.mode, im.size, im.getpixel((0,0)))
-    diff = ImageChops.difference(im, bg)
-    diff = ImageChops.add(diff, diff, 2.0, -100)
-    bbox = diff.getbbox()
-    if bbox:
-        return im.crop(bbox)
-
-def draw_mol(mol):
-    '''
-    Draws a structure
-    
-    aligns to "template", i.e. the first atom - makes it nice and linear
+    #first up, launch PyMol with the -R flag so we can pass data to it:
+    subprocess.call(path + ' -R')
+    print('\nSending data to PyMol and drawing; this can be slow!')
+    if end == -1:
+        end = mol.GetNumConformers()
         
-    Alignment is handled by the align_mol function (above!)
+    if path is None or path == '':
+        print('Error: PyMol path not set!')
+        return
+        
+    v= PyMol.MolViewer()
+    v.DeleteAll()
     
-    Args:
-    Smiles - smiles string to draw_mol
+    for i in range(start,end):
+        v.ShowMol(mol, confId=i,name=name+'_conf-%d'%i,showOnly=False)
     
-    Returns:
-    img - a PIL image of the molecule in questeion
-    '''
+    if style:
+        # call grid mode; coloring options
+        # putting multiple v.server.do calls on one line speeds it up a lot.
+        v.server.do('set_color oxygen, [1.0,0.4,0.4];'+
+                    'set_color nitrogen, [0.5,0.5,1.0];'+
+                    'set_color carbon, [0.5,0.5,0.5];'+
+                    'set_color hydrogen, [1.0,1.0,1.0];'+
+                    'util.cbag;recolor;'+
+                    'remove solvent;'+
+                    'as spheres;'+
+                    'bg white;'+
+                    'set light_count,8;'+
+                    'set spec_count,1;'+
+                    'set shininess, 10;'+
+                    'set specular, 0.25;'+
+                    'set ambient,0;'+
+                    'set direct,0;'+
+                    'set reflect,1.5;'+
+                    'set ray_shadow_decay_factor, 0.1;'+
+                    'set ray_shadow_decay_range, 2;'+
+                    'unset depth_cue;' + 
+                    ('set grid_mode, on;' * grid))
 
-    ps = rdCoordGen.CoordGenParams()
-    psminimizerPrecision = ps.sketcherBestPrecision
-    rdCoordGen.AddCoords(mol,ps)
-    
-    mol = align_mol(mol)
-    img = Draw.MolToImage(mol)
-    img.save("temp_mol_img.png")
-    return(img)
+        if ray:
+            print('I am going to raytrace')
+            v.server.do('ray') # you can raytrace if you want
+
+    return() 
