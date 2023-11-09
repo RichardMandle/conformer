@@ -7,8 +7,8 @@ Future Plans:
 <br> progress bar might be useful for large/slow jobs
 <br><br>
 ## Usage
-* Install dependent packages with conda (rdkit, numpy, matplotlib, tkinter, tqdm, others????) <br>
-* Launch the gui with $python gui.py <br>
+* Install dependent packages with conda (rdkit, numpy, matplotlib, tkinter, tqdm; you can do this with <br><br>```pip install -r requirements.txt```<br><br>
+* Launch the gui:<br><br>``` python gui.py ```<br><br>
 ![image](https://github.com/RichardMandle/conformer/assets/101199234/60019c39-1fda-4d30-9aca-585cdaa89a9e)
 * Load your molecule as a .mol file (can be saved from ChemDraw) or type in the smiles/smarts string <br>
 * You can save your session here (including generated conformers) or reload a previous session <br>
