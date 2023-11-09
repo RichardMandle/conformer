@@ -1,11 +1,10 @@
 ![image](https://github.com/RichardMandle/conformer/assets/101199234/f3f93b59-ba1c-43b6-9bca-8e42b25973c3)# conformer
 Repo for LC conformational analysis tool.
 <br><br>
-Current version - V 0.2:<br> backend code working <br> initial GUI working<br>
-Immediate plans:<br>improve plotting tab; add options for fits, temperature control etc.<br> add option for systematic rotor search (needs new selection tool)
-<br> improve handling of Gaussian files, read output geometries incase the user calls "OPT"
-<br> implement HPC usage case; write .gjf files, build SGE script (.sh), execute through SGE etc.
+Current version - V 0.2:<br> backend code working <br> usable GUI <br>
+Future Plans:
 <br> implement reading external .log files
+<br> progress bar might be useful for large/slow jobs
 <br><br>
 ## Usage
 * Install dependent packages with conda (rdkit, numpy, matplotlib, tkinter, tqdm, others????) <br>
