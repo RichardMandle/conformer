@@ -1,7 +1,7 @@
 ![image](https://github.com/RichardMandle/conformer/assets/101199234/f3f93b59-ba1c-43b6-9bca-8e42b25973c3)# conformer
 Repo for LC conformational analysis tool.
 <br><br>
-Current version - V 0.1:<br> backend code working <br> initial GUI working<br>
+Current version - V 0.2:<br> backend code working <br> initial GUI working<br>
 Immediate plans:<br>improve plotting tab; add options for fits, temperature control etc.<br> add option for systematic rotor search (needs new selection tool)
 <br> improve handling of Gaussian files, read output geometries incase the user calls "OPT"
 <br> implement HPC usage case; write .gjf files, build SGE script (.sh), execute through SGE etc.
@@ -11,7 +11,8 @@ Immediate plans:<br>improve plotting tab; add options for fits, temperature cont
 * Install dependent packages with conda (rdkit, numpy, matplotlib, tkinter, tqdm, others????) <br>
 * Launch the gui with $python gui.py <br>
 ![image](https://github.com/RichardMandle/conformer/assets/101199234/60019c39-1fda-4d30-9aca-585cdaa89a9e)
-* Load your molecule as a .mol file (can be saved from ChemDraw) <br>
+* Load your molecule as a .mol file (can be saved from ChemDraw) or type in the smiles/smarts string <br>
+* You can save your session here (including generated conformers) or reload a previous session <br>
 * Time to select the atoms that define the two vectors we'll use to calcualte the angle. You can enter the SMILES or SMARTS strings of representative groups:<br>
 * ![image](https://github.com/RichardMandle/conformer/assets/101199234/78074ac2-32fc-4a0d-97dc-b3b650078dc8)
 
@@ -19,7 +20,7 @@ Immediate plans:<br>improve plotting tab; add options for fits, temperature cont
 * ![image](https://github.com/RichardMandle/conformer/assets/101199234/ec2a0521-ae0f-42fa-812c-7c4d49b20e80)
 * In the "conformer search" tab set your desired options. Number of conformers to screen, the desired method used to generate conformers, the title of your job, and the evaluation method. We evaluate the energy of each conformer; you can use the inbuilt "MMFF" method which is very fast. The advanced settings button lets you customise the conformer search options even more:
 * ![image](https://github.com/RichardMandle/conformer/assets/101199234/269a83f8-c337-489d-832b-901f3a162854)
-* ... Or you can run an external calculation through Gaussian (you need to set the path to the Gaussian executable in 'Settings'). This has a few extra options, method, number of CPU cores, ammount of RAM. Don't run an OPT job as the code doesn't (currently) check for changes in geometry:
+* ... Or you can run an external calculation through Gaussian (you need to set the path to the Gaussian executable in 'Settings'). This has a few extra options, method, number of CPU cores, ammount of RAM. If you select an "opt" job then the conformers will be optimised with your chosen method (after the RMS pruning etc.)
 * ![image](https://github.com/RichardMandle/conformer/assets/101199234/7874985f-c73e-4313-816b-629c05f9cfa7)
 * On the "Analysis #1" tab we can visualise the first of our results as a histogram of probability of a given bend angle. A slider controls the bin width of the histogram, and you can specify the temperature (in K) used in the probability calculation. You can fit a Gaussian to the data, save the data (or histogram data) as .csv, or even just straight to .png. Some basic stats are also printed (mean angle, median angle etc.):
 ![image](https://github.com/RichardMandle/conformer/assets/101199234/6039b39b-a79a-47e3-87b5-0ed551c3ea6c)
