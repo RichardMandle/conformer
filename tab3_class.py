@@ -32,7 +32,7 @@ class TabThree(ttk.Frame):
         self.bin_slider.set(10)  # Set an initial value
         self.bin_slider.pack()
         
-        self.bin_value_label = ttk.Label(settings_frame, text="Bins: 10")  # Initial value
+        self.bin_value_label = ttk.Label(settings_frame, text="Bin Width /° : 10")  # Initial value
         self.bin_value_label.pack()
         
         temp_label = ttk.Label(settings_frame, text="Temperature / K:")

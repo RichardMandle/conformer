@@ -322,6 +322,6 @@ class TabTwo(ttk.Frame):
             write_only = False # TO DO - this is hard coded if you ever want to expose it
         )
         if self.shared_data.angle:
-            print('\nSuccessful completion of conformer search')
-            print('Number of conformers screened: ' + str(len(self.shared_data.energy)))
+            print('Successfully screened ' + str(len(self.shared_data.energy)) + ' conformers!')
+            self.shared_data.property_dict = conformer.get_3d_descriptors(self.shared_data.mol_conf,self.shared_data.angle,self.shared_data.probability) # Get available properties from the property_dicts
             self.callback_handler.call_callbacks("data_updated") # notify tabs to update

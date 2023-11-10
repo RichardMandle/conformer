@@ -17,33 +17,28 @@ class TabOne(ttk.Frame):
         self.callback_handler=callback_handler
         ttk.Frame.__init__(self,parent, *args, **kwargs)
         self.create_tab1_content()
+        
+    def create_ui_element(self, element_type, row, column, text='', command=None):
+        element = element_type(self, text=text, command=command if command else None)
+        element.grid(row=row, column=column, padx=5, pady=5, sticky="w")
+        return element
          
     def create_tab1_content(self):
 
-        file_label = ttk.Label(self, text = "Load from File:") # 1st row is  labels
-        file_label.grid(row=0, column=1, padx=5, pady=5, sticky="w") #1st col = file loading, 2nd = gen. from SMI/SMA
+        labels = ["Load from File:", "Generate from SMILES/SMARTS"]
+        for i, label_text in enumerate(labels):
+            ttk.Label(self, text=label_text).grid(row=0, column=i+1, padx=0, pady=10, sticky="w")
 
-        smiles_label = ttk.Label(self, text="Generate from SMILES/SMARTS")
-        smiles_label.grid(row=0, column=2, padx=5, pady=5, sticky="w")
-        
-        open_button = ttk.Button(self, text="Open Molecule from File", command=self.open_file_dialog)
-        open_button.grid(row=1, column=1, padx=5, pady=5, sticky="w")
-       
+        self.create_ui_element(ttk.Button, 1, 1, "Open Molecule from File", self.open_file_dialog)
         self.molecule_entry = ttk.Entry(self)
         self.molecule_entry.grid(row=1, column=2, padx=5, pady=5, sticky="w")
 
-        save_session_button = ttk.Button(self, text="Save Conformer Session", command=self.save_session)
-        save_session_button.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        self.create_ui_element(ttk.Button, 2, 1, "Save Conformer Session", self.save_session)
+        self.create_ui_element(ttk.Button, 3, 1, "Load Conformer Session", self.load_session)
+        self.create_ui_element(ttk.Button, 2, 2, "Generate Molecule", self.get_mol_from_text)
 
-        load_session_button = ttk.Button(self, text="Load Conformer Session", command=self.load_session)
-        load_session_button.grid(row=3, column=1, padx=5, pady=5, sticky="w")
-
-        generate_button = ttk.Button(self, text="Generate Molecule", command=self.get_mol_from_text)
-        generate_button.grid(row=2, column=2, padx=5, pady=5, sticky="w")
-                
-        self.canvas = tk.Canvas(self, width=1000, height=400)
-        self.canvas.grid(row=4, column=1, columnspan=4, padx=10, pady=10,sticky='ew')
-
+        self.canvas = tk.Canvas(self, width=775, height=400)
+        self.canvas.grid(row=4, column=1, columnspan=4, padx=10, pady=10, sticky='ew')
         self.canvas.bind("<Button-1>", self.get_nearest_atom)
     
     def save_session(self):
@@ -52,8 +47,6 @@ class TabOne(ttk.Frame):
                     filetypes=[('Pickle files', '*.pkl'), ('All files', '*.*')],
                     title="Save File")
                     
-
-        
         data_to_save = {'loaded_mol' : self.shared_data.loaded_mol,
                         'property_dict' : self.shared_data.property_dict,
                         'highlights' : self.shared_data.highlights,
@@ -111,15 +104,13 @@ class TabOne(ttk.Frame):
     def get_mol_from_text(self):
         text = self.molecule_entry.get()
         if text:
-            try:
-                mol = Chem.MolFromSmarts(text) # try smarts first
+            mol = Chem.MolFromSmiles(text) # try SMILES first
+            if mol:
+                print('Loaded molecule from SMILES input')
+            else:
+                mol = Chem.MolFromSmarts(text) # try SMILES next
                 if mol:
                     print('Loaded molecule from SMARTS input')
-                    
-            finally:
-                mol = Chem.MolFromSmiles(text) # try smiles first
-                if mol:
-                    print('Loaded molecule from SMILES input')
                     
         if mol is not None:
             self.shared_data.loaded_mol = Chem.AddHs(mol)  # Store the loaded mol object and add hydrogens
@@ -129,7 +120,7 @@ class TabOne(ttk.Frame):
         if self.shared_data.loaded_mol is not None:
             
             if update_only == False: #update only flag lets us not overwrite our conformer data when we compute 2Dcoords
-                AllChem.Compute2DCoords(self.shared_data.loaded_mol)
+                AllChem.Compute2DCoords(self.shared_data.loaded_mol,clearConfs=False) # clearConfs = False to avoid overwriting conformer data we already have for this mol object.
             
             self.shared_data.drawer = rdMolDraw2D.MolDraw2DCairo(500, 300)
             
@@ -178,8 +169,6 @@ class TabOne(ttk.Frame):
                 nearest_atom = i
     
         if nearest_atom is not None:
-            #self.atom_label.config(text=f"Last Selected Atom: {nearest_atom + 1}")
-            
             self.shared_data.highlights.append(nearest_atom+1)
             if len(self.shared_data.highlights) == 5: # reset list if it has 5 entries
                 self.shared_data.highlights = [nearest_atom+1]
@@ -191,6 +180,7 @@ class TabOne(ttk.Frame):
             ("MOL ", "*.mol"),
             ("MOL2", "*.mol2"),
             ("PDB", "*.pdb"),
+            ("SDF", "*.sdf"),
             ("smiles", "*.smi"),
             ("smarts", "*.sma"),
             ("Text files", "*.txt"),
@@ -208,7 +198,14 @@ class TabOne(ttk.Frame):
                 elif file_extension == "mol2":
                     mol = Chem.MolFromMol2File(file_path)
                 elif file_extension == "pdb":
-                    mol = Chem.MolFromPDBFile(file_path)
+                    print('Loading from PDB input is likely to get bonding wrong; use carefully')
+                    mol = Chem.MolFromPDBFile(file_path,removeHs=False)
+                    Chem.SanitizeMol(mol) # we need to sanitise as we'll often miss aromaticity here.
+                elif file_extension == "sdf":
+                    suppl = Chem.SDMolSupplier(file_path)
+                    for m in suppl:
+                        mol = m # assume there is just 1 in the sdf... very weak code TO DO - fix
+                    
                 elif file_extension == "smi":
                     with open(file_path, "r") as f:
                         smi = f.readline().strip()
@@ -222,7 +219,10 @@ class TabOne(ttk.Frame):
                         mol = Chem.MolFromMolBlock(f.read())
     
                 if mol is not None:
-                    self.shared_data.loaded_mol = Chem.AddHs(mol)  # Store the loaded mol object and add hydrogens
+                    if file_extension != 'pdb':
+                        self.shared_data.loaded_mol = Chem.AddHs(mol)  # Store the loaded mol object and add hydrogens
+                    if file_extension == 'pdb':
+                        self.shared_data.loaded_mol = mol
                     print("Molecule successfully loaded!\n")
                     self.draw_molecule()
                 

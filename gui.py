@@ -1,10 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, OptionMenu, BooleanVar, simpledialog  
 
-#import our own modules
-import draw
-import conformer
-
 #import tabs
 from tab1_class import TabOne
 from tab2_class import TabTwo
@@ -67,6 +63,8 @@ class ConformerGUI:
         
         self.root = root
         self.root.title("Conformer GUI")
+        self.root.geometry("800x500")  # Width x Height
+        
         self.notebook = ttk.Notebook(self.root)
 
         self.tab1 = TabOne(self.notebook, self.shared_data, self.callback_handler)
@@ -76,7 +74,7 @@ class ConformerGUI:
         self.tab5 = TabFive(self.notebook, self.shared_data, self.callback_handler)
         self.tab6 = TabSix(self.notebook, self.shared_data)
 
-        self.notebook.add(self.tab1, text="Load Molecule")
+        self.notebook.add(self.tab1, text="Load/Save Molecule")
         self.notebook.add(self.tab2, text="Conformer Search")
         self.notebook.add(self.tab3, text="Analysis #1")
         self.notebook.add(self.tab4, text="Analysis #2")

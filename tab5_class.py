@@ -18,7 +18,7 @@ class TabFive(ttk.Frame):
         tab5_outer_frame = ttk.Frame(self)
         tab5_outer_frame.grid(row=0, column=0, sticky="nsew")
         
-        self.canvas_conformer = tk.Canvas(tab5_outer_frame, width=500, height=300)
+        self.canvas_conformer = tk.Canvas(tab5_outer_frame, width=550, height=360)
         self.canvas_conformer.grid(row=0, column=0, padx=5, pady=5)
         
         tab5_inner_frame = ttk.Frame(tab5_outer_frame)
@@ -140,7 +140,7 @@ class TabFive(ttk.Frame):
             conformer = mol.GetConformer(conformer_index)
             mol_with_conformer.AddConformer(conformer, assignId=True)
 
-            img = Draw.MolToImage(mol_with_conformer, size=(400, 400))
+            img = Draw.MolToImage(mol_with_conformer, size=(550, 360))
             img = ImageTk.PhotoImage(Image.fromarray(np.array(img)))
 
             return img
