@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk 
 import conformer
 import os
-import json
+import threading
 
 class TabTwo(ttk.Frame):
     def __init__(self, parent, shared_data,  callback_handler, *args, **kwargs):
@@ -22,7 +22,7 @@ class TabTwo(ttk.Frame):
         angle_method_label = ttk.Label(vector_settings_grid, text="Angle Definition Method:")
         angle_method_label.grid(row=0, column=0, padx=10, pady=5, sticky="e")
 
-        self.shared_data.angle_methods = ["by atom index", "by SMILES match", "by SMARTS match","None"]
+        self.shared_data.angle_methods = ["None","by atom index", "by SMILES match", "by SMARTS match"]
         self.selected_angle_method = tk.StringVar()
         
         angle_method_dropdown = ttk.Combobox(vector_settings_grid, textvariable=self.selected_angle_method, values=self.shared_data.angle_methods)
@@ -151,16 +151,20 @@ class TabTwo(ttk.Frame):
         search_button = ttk.Button(settings_grid, text="Start Conformer Search", command=self.start_conformer_search)
         search_button.grid(row=len(settings_labels) + 6, columnspan=2, pady=20)
         
+        self.status_label = ttk.Label(settings_grid, text="")
+        self.status_label.grid(row=len(settings_labels) + 8, columnspan=2, pady=20)
+        
+        
     def show_advanced_settings(self):
         # this function makes a popup window for some more advanced settings
-        advanced_settings_window = ttk.Toplevel(self.root)
+        advanced_settings_window = tk.Toplevel(self)
         advanced_settings_window.title("Advanced Settings")
 
         options_frame = ttk.LabelFrame(advanced_settings_window, text="Advanced Options")
         options_frame.grid(row=0, column=0, padx=10, pady=5)
 
         advanced_options = [
-            ("RMS Threshold for Pruning", "0.33", "0.33"),
+            ("RMS Threshold for Pruning", "0.675", "0.675"),
             ("Random Seed", "61453", "61453"),
             ("Use Torsion Preferences", ["True", "False"], "True"),
             ("Use Chemical Knowledge", ["True", "False"], "True"),
@@ -230,8 +234,20 @@ class TabTwo(ttk.Frame):
 
         save_button = ttk.Button(advanced_settings_window, text="Save Settings", command=save_advanced_settings)
         save_button.grid(row=len(advanced_options) + 1, column=0, columnspan=2, pady=5)
+    
+    def update_status_label(self, message):
+        # updates the status label
+        self.status_label.config(text=message)    
         
     def start_conformer_search(self):
+        # start a seperate thread for conformer generation so we don't freeze the GUI
+        conformer_thread = threading.Thread(target=self.conformer_generation_logic)
+        conformer_thread.start()
+        self.update_status_label("Conformer Generation In Progress...\nPlease be patient")
+        
+    def conformer_generation_logic(self):
+        # this is the actual function that runs the conformer generation, but its mostly just passing variables
+        # pretty sure this could be neater/smaller/more obvious.
         num_conformers = int(self.shared_data.settings_entries[0].get())
         job_name = self.shared_data.settings_entries[1].get()
         selected_method = self.selected_method.get()
@@ -300,12 +316,14 @@ class TabTwo(ttk.Frame):
             # in the case that its 'None', just use some dummy atom coordinates.
             # The reason to do this is maybe a Gaussian calculation is requested, and currently
             # this is only allowed when an angle calculation is performed. TO DO - fix this by
-            # refactoring the code to permit Gaussian jobs without angle information.
+            # refactoring the code to permit external Gaussian jobs without angle information. 
             vector_definition_method = 'atoms'
             atoms = [0,1,2,3]
 
-        # Call conf.conf_search with the gathered inputs
-        # need to update with additional parameters from advanced settings
+        self.update_status_label("Analysing Conformers...\nPlease be patient")
+        if settings_dict['gaussian_job'] == True:
+            self.update_status_label("Running external Gaussian jobs...\nSee terminal for remaining time")
+            
         self.shared_data.energy,self.shared_data.angle = conformer.conf_analysis(
             mol_conf=self.shared_data.mol_conf,
             energy = self.shared_data.energy,
@@ -323,5 +341,13 @@ class TabTwo(ttk.Frame):
         )
         if self.shared_data.angle:
             print('Successfully screened ' + str(len(self.shared_data.energy)) + ' conformers!')
+            if self.shared_data.angle != []:
+                self.returned_fig,self.shared_data.delta_energy,self.shared_data.probability,self.hist_x,self.hist_y,xmax,fwhm = conformer.calc_bend_hist(self.shared_data.angle, 
+                                                        self.shared_data.energy, 
+                                                        fit_gaussian = True,
+                                                        name=self.shared_data.settings_entries[1].get(), 
+                                                        Temp=298, 
+                                                        BinSteps=10)
             self.shared_data.property_dict = conformer.get_3d_descriptors(self.shared_data.mol_conf,self.shared_data.angle,self.shared_data.probability) # Get available properties from the property_dicts
             self.callback_handler.call_callbacks("data_updated") # notify tabs to update
+            self.update_status_label(f"Conformer Generation Complete!\nGenerated {str(len(self.shared_data.energy))} conformers!")

@@ -81,7 +81,7 @@ class TabFive(ttk.Frame):
         '''
         Function for saving conformers as SDF
         '''
-        root = ttk.Tk()
+        root = tk.Tk()
         root.withdraw()  # Hide the root window
 
         filetypes = (

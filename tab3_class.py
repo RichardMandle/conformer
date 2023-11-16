@@ -104,7 +104,7 @@ class TabThree(ttk.Frame):
             with open(file_path, 'w', newline='') as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow(['Angle / Deg', ' Energy / kj mol', 'dE / kj mol-1', 'Probability'])
-                for angle, energy, delta_energy, probability in zip(self.shared_data.angle, self.shared_data.energy, self.delta_energy, self.shared_data.probability):
+                for angle, energy, delta_energy, probability in zip(self.shared_data.angle, self.shared_data.energy, self.shared_data.delta_energy, self.shared_data.probability):
                     csvwriter.writerow([angle, energy, delta_energy, probability])
         print('\nSaved data to ' + str(file_path))
         

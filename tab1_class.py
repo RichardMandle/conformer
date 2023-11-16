@@ -98,7 +98,7 @@ class TabOne(ttk.Frame):
             except Exception as e:
                 print(f"An error occurred while loading data: {e}")    
                 
-        self.draw_molecule(update_only=True) # redraw the molecule
+        self.draw_molecule(clear_confs=False) # redraw the molecule from the conformer given...
         self.callback_handler.call_callbacks("data_updated") # notify tabs to update via callback
         
     def get_mol_from_text(self):
@@ -114,13 +114,12 @@ class TabOne(ttk.Frame):
                     
         if mol is not None:
             self.shared_data.loaded_mol = Chem.AddHs(mol)  # Store the loaded mol object and add hydrogens
-            self.draw_molecule()
+            self.draw_molecule(clear_confs=True)  
             
-    def draw_molecule(self, update_only=False):
+    def draw_molecule(self, clear_confs=True):
         if self.shared_data.loaded_mol is not None:
-            
-            if update_only == False: #update only flag lets us not overwrite our conformer data when we compute 2Dcoords
-                AllChem.Compute2DCoords(self.shared_data.loaded_mol,clearConfs=False) # clearConfs = False to avoid overwriting conformer data we already have for this mol object.
+            # set clear_confs to delete conformer data; useful when loading a new molecule, but not when loading a prev. session
+            AllChem.Compute2DCoords(self.shared_data.loaded_mol,clearConfs=clear_confs) # clearConfs = False to avoid overwriting conformer data we already have for this mol object.
             
             self.shared_data.drawer = rdMolDraw2D.MolDraw2DCairo(500, 300)
             
@@ -173,59 +172,27 @@ class TabOne(ttk.Frame):
             if len(self.shared_data.highlights) == 5: # reset list if it has 5 entries
                 self.shared_data.highlights = [nearest_atom+1]
                 
-            self.draw_molecule()
+            self.draw_molecule(clear_confs=False)
             
     def open_file_dialog(self):
-        filetypes = (
-            ("MOL ", "*.mol"),
-            ("MOL2", "*.mol2"),
-            ("PDB", "*.pdb"),
-            ("SDF", "*.sdf"),
-            ("smiles", "*.smi"),
-            ("smarts", "*.sma"),
-            ("Text files", "*.txt"),
-            ("All files", "*.*")
-        )
-        file_path = filedialog.askopenfilename(filetypes=filetypes)
-    
+        file_path = filedialog.askopenfilename(filetypes=[("MOL ", "*.mol"), ("MOL2", "*.mol2"), ("SDF", "*.sdf")])
         if file_path:
             try:
                 mol = None
                 file_extension = file_path.split(".")[-1].lower()
-    
                 if file_extension == "mol":
                     mol = Chem.MolFromMolFile(file_path)
                 elif file_extension == "mol2":
                     mol = Chem.MolFromMol2File(file_path)
-                elif file_extension == "pdb":
-                    print('Loading from PDB input is likely to get bonding wrong; use carefully')
-                    mol = Chem.MolFromPDBFile(file_path,removeHs=False)
-                    Chem.SanitizeMol(mol) # we need to sanitise as we'll often miss aromaticity here.
                 elif file_extension == "sdf":
                     suppl = Chem.SDMolSupplier(file_path)
                     for m in suppl:
                         mol = m # assume there is just 1 in the sdf... very weak code TO DO - fix
-                    
-                elif file_extension == "smi":
-                    with open(file_path, "r") as f:
-                        smi = f.readline().strip()
-                        mol = Chem.MolFromSmiles(smi)
-                elif file_extension == "sma":
-                    with open(file_path, "r") as f:
-                        smi = f.readline().strip()
-                        mol = Chem.MolFromSmarts(smi)
-                elif file_extension == "txt":
-                    with open(file_path, "r") as f:
-                        mol = Chem.MolFromMolBlock(f.read())
-    
-                if mol is not None:
-                    if file_extension != 'pdb':
-                        self.shared_data.loaded_mol = Chem.AddHs(mol)  # Store the loaded mol object and add hydrogens
-                    if file_extension == 'pdb':
-                        self.shared_data.loaded_mol = mol
-                    print("Molecule successfully loaded!\n")
-                    self.draw_molecule()
                 
             except Exception as e:
                 print("Error:", str(e))
                 
+            if mol is not None:
+                self.shared_data.loaded_mol = Chem.AddHs(mol)
+                print("Molecule successfully loaded!\n")
+                self.draw_molecule(clear_confs=True)   

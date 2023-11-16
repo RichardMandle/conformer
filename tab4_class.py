@@ -125,7 +125,10 @@ class TabFour(ttk.Frame):
             np.savetxt(file_path, data, delimiter=',', header=f'{x_property},{y_property}', comments='')
             
     def fit_and_plot_data(self):
-        self.plot_data() # use this code to plot the x/y data
+        if self.current_figure is not None:
+            plt.close()
+            
+        self.plot_data() # call the plot the x/y data
         x_property, y_property = self.get_xy_properties() # get the data here so we can fit it
         x_data, y_data = self.get_xy_data()
         
@@ -134,9 +137,9 @@ class TabFour(ttk.Frame):
         
         if fitting_choice in degree_mapping:
             self.perform_curve_fit(x_data, y_data, degree_mapping[fitting_choice])
-
-        self.canvas.draw()
         plt.legend()
+        self.canvas.draw()
+
         
     def perform_curve_fit(self, x_data, y_data, degree):
         # this code computes the polynomial fit and plots it

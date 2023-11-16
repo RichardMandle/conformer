@@ -58,7 +58,7 @@ def get_default_search_settings():
         dict: Dictionary containing default search settings.
     """
     return {
-        'rms_threshold': 0.33,
+        'rms_threshold': 0.675,
         'use_torsion_pref': True,
         'use_knowledge': True,
         'use_random_coords': False,
@@ -143,7 +143,7 @@ def conf_gen(mol,
              num_of_conformer=500,
              embeded_method='ETKDGv2', 
              name='NoName',
-             rms_thresh = 0.33,
+             rms_thresh = 0.675,
              use_torsion_pref = True,
              use_knowledge = True,
              use_random_coords = False,
