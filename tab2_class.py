@@ -3,6 +3,7 @@ from tkinter import ttk
 import conformer
 import os
 import threading
+from rdkit import Chem
 
 class TabTwo(ttk.Frame):
     def __init__(self, parent, shared_data,  callback_handler, *args, **kwargs):
@@ -62,20 +63,13 @@ class TabTwo(ttk.Frame):
                     highlights_label = ttk.Label(vector_settings_grid, text='Please select atoms using the tool on tab #1')
                     highlights_label.grid(row=1, column=0, columnspan=2, padx=10, pady=5)
             
-            elif angle_method == "by SMILES match":
-                smiles_group1_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
-                self.smiles_group1_entry.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+            elif angle_method == "by SMILES match" or angle_method == "by SMARTS match":
+                group1_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
+                self.group1_entry.grid(row=1, column=1, padx=10, pady=5, sticky="w")
 
-                smiles_group2_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
-                self.smiles_group2_entry.grid(row=2, column=1, padx=10, pady=5, sticky="w")
+                group2_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
+                self.group2_entry.grid(row=2, column=1, padx=10, pady=5, sticky="w")
 
-            elif angle_method == "by SMARTS match":
-                smarts_group1_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
-                self.smarts_group1_entry.grid(row=1, column=1, padx=10, pady=5, sticky="w")
-
-                smarts_group2_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
-                self.smarts_group2_entry.grid(row=2, column=1, padx=10, pady=5, sticky="w")
-            
             elif angle_method == "None":
                 print('No angle method selected; will compute energy only')
                 
@@ -144,15 +138,18 @@ class TabTwo(ttk.Frame):
 
         # Set up the trace to call update_additional_settings when the evaluation method changes
         self.selected_eval_method.trace("w", update_additional_settings)
-        
-        advanced_settings_button = ttk.Button(settings_grid, text="Advanced Settings", command=self.show_advanced_settings)
-        advanced_settings_button.grid(row=len(settings_labels) + 7, columnspan=2, pady=5)
 
         search_button = ttk.Button(settings_grid, text="Start Conformer Search", command=self.start_conformer_search)
-        search_button.grid(row=len(settings_labels) + 6, columnspan=2, pady=20)
-        
+        search_button.grid(row=len(settings_labels) + 6, columnspan=2, pady=5)
+
+        search_button = ttk.Button(settings_grid, text="Recalculate Bend-Angles", command=self.conformer_analysis_logic)
+        search_button.grid(row=len(settings_labels) + 7, columnspan=2, pady=5)
+                
+        advanced_settings_button = ttk.Button(settings_grid, text="Advanced Settings", command=self.show_advanced_settings)
+        advanced_settings_button.grid(row=len(settings_labels) + 8, columnspan=2, pady=5)
+
         self.status_label = ttk.Label(settings_grid, text="")
-        self.status_label.grid(row=len(settings_labels) + 8, columnspan=2, pady=20)
+        self.status_label.grid(row=len(settings_labels) + 9, columnspan=2, pady=5)
         
         
     def show_advanced_settings(self):
@@ -246,71 +243,74 @@ class TabTwo(ttk.Frame):
         self.update_status_label("Conformer Generation In Progress...\nPlease be patient")
         
     def conformer_generation_logic(self):
-        # this is the actual function that runs the conformer generation, but its mostly just passing variables
+        local_mol = Chem.Mol(self.shared_data.loaded_mol) # COPY the mol object so we don't break it with reselecting things later.
         # pretty sure this could be neater/smaller/more obvious.
-        num_conformers = int(self.shared_data.settings_entries[0].get())
-        job_name = self.shared_data.settings_entries[1].get()
-        selected_method = self.selected_method.get()
-        selected_eval_method = self.selected_eval_method.get()     
+
+        self.settings_dict = conformer.get_default_search_settings() # retrieve the search defaults from conformer.pymol
         
-        settings_dict = conformer.get_default_search_settings() # retrieve the search defaults from conformer.pymol
-        
-        if selected_eval_method == self.eval_methods[-1]: # if its the gaussian method then do this
-            settings_dict['gaussian_job'] = True 
-            settings_dict['gaussian_options'] = self.additional_settings_widgets[1].get()
-            settings_dict['gaussian_nproc'] = self.additional_settings_widgets[3].get()
-            settings_dict['gaussian_vmem'] = self.additional_settings_widgets[5].get()
+        if self.selected_eval_method.get()  == self.eval_methods[-1]: # if its the gaussian method then do this
+            self.settings_dict['gaussian_job'] = True 
+            self.settings_dict['gaussian_options'] = self.additional_settings_widgets[1].get()
+            self.settings_dict['gaussian_nproc'] = self.additional_settings_widgets[3].get()
+            self.settings_dict['gaussian_vmem'] = self.additional_settings_widgets[5].get()
       
         if self.shared_data.settings:
             print('Using Advanced Settings')
-            settings_dict['rms_threshold'] = float(self.shared_data.settings['RMS Threshold for Pruning'])
-            settings_dict['use_torsion_pref'] = self.shared_data.settings['Use Torsion Preferences'] == 'True'
-            settings_dict['use_knowledge'] = self.shared_data.settings['Use Chemical Knowledge'] == 'True'
-            settings_dict['use_random_coords'] = self.shared_data.settings['Use Random Coords'] == 'True'
-            settings_dict['MMFF Variant'] = self.shared_data.settings["MMFF Variant"]
-            settings_dict['random_seed'] = int(self.shared_data.settings['Random Seed'])
-            settings_dict['opt'] = self.shared_data.settings['Do MMFF Optimization'] == 'True'
+            self.settings_dict['rms_threshold'] = float(self.shared_data.settings['RMS Threshold for Pruning'])
+            self.settings_dict['use_torsion_pref'] = self.shared_data.settings['Use Torsion Preferences'] == 'True'
+            self.settings_dict['use_knowledge'] = self.shared_data.settings['Use Chemical Knowledge'] == 'True'
+            self.settings_dict['use_random_coords'] = self.shared_data.settings['Use Random Coords'] == 'True'
+            self.settings_dict['MMFF Variant'] = self.shared_data.settings["MMFF Variant"]
+            self.settings_dict['random_seed'] = int(self.shared_data.settings['Random Seed'])
+            self.settings_dict['opt'] = self.shared_data.settings['Do MMFF Optimization'] == 'True'
 
-            if settings_dict['opt'] == True:
-
-                settings_dict['max_opt_iter']=int(self.shared_data.settings["MMFF Options"]['Max Iterations'])
-                settings_dict['min_energy_MMFF']= float(self.shared_data.settings["MMFF Options"]['Energy Threshold (kcal/mol)'])
+            if self.settings_dict['opt'] == True:
+                self.settings_dict['max_opt_iter']=int(self.shared_data.settings["MMFF Options"]['Max Iterations'])
+                self.settings_dict['min_energy_MMFF']= float(self.shared_data.settings["MMFF Options"]['Energy Threshold (kcal/mol)'])
         
         # do the conformer search, store the conformers in self.shared_data.mol_conf and energies in self.shared_data.energy:
-        self.shared_data.mol_conf, self.shared_data.energy = conformer.conf_gen(mol=self.shared_data.loaded_mol,
-                                                        embeded_method=selected_method,
-                                                        num_of_conformer=num_conformers,
-                                                        name=job_name,
-                                                        rms_thresh = settings_dict['rms_threshold'],
-                                                        use_torsion_pref = settings_dict['use_torsion_pref'],
-                                                        use_knowledge = settings_dict['use_knowledge'],
-                                                        use_random_coords = settings_dict['use_random_coords'],
-                                                        random_seed = settings_dict['random_seed'],
-                                                        MMFF_variant = settings_dict['MMFF Variant'],
-                                                        opt = settings_dict['opt'],
-                                                        max_iter= settings_dict['max_opt_iter'],
-                                                        min_energy_MMFF= settings_dict['min_energy_MMFF'])
+        self.shared_data.mol_conf, self.shared_data.energy = conformer.conf_gen(mol=local_mol,
+                                                        embeded_method=self.selected_method.get(),
+                                                        num_of_conformer=int(self.shared_data.settings_entries[0].get()),
+                                                        name=self.shared_data.settings_entries[1].get(),
+                                                        rms_thresh = self.settings_dict['rms_threshold'],
+                                                        use_torsion_pref = self.settings_dict['use_torsion_pref'],
+                                                        use_knowledge = self.settings_dict['use_knowledge'],
+                                                        use_random_coords = self.settings_dict['use_random_coords'],
+                                                        random_seed = self.settings_dict['random_seed'],
+                                                        MMFF_variant = self.settings_dict['MMFF Variant'],
+                                                        opt = self.settings_dict['opt'],
+                                                        max_iter= self.settings_dict['max_opt_iter'],
+                                                        min_energy_MMFF= self.settings_dict['min_energy_MMFF'])
                 
+        self.conformer_analysis_logic() # do the analysis
+        
+    def conformer_analysis_logic(self):
+        # this function splits the analysis logic from the conformer generation logic so we can recompute as needed
+        #print(self.shared_data.mol_conf.GetNumConformers())
+        if self.shared_data.angle != []:
+            self.shared_data.angle = [] # clear existing angle data.
+            self.shared_data.probability = [] # clear existing probability data.
+        
         atoms=[]
         vec1 = ''
         vec2 = ''
 
-        if settings_dict['opt'] == True:
+        if self.settings_dict['opt'] == True:
             print('Doing MMFF optimisation')
                             
         if self.selected_angle_method.get() == 'by atom index':
             vector_definition_method = 'atoms'
             atoms = [x-1 for x in self.shared_data.highlights] #remember, rdkit indexes from zero...
 
-        if self.selected_angle_method.get() == 'by SMILES match':
-            vector_definition_method = 'smi'
-            vec1 = self.smiles_group1_entry.get()
-            vec2 = self.smiles_group2_entry.get()
-            
-        if self.selected_angle_method.get() == 'by SMARTS match':
-            vector_definition_method = 'sma'
-            vec1 = self.smarts_group1_entry.get()
-            vec2 = self.smarts_group2_entry.get()
+        if self.selected_angle_method.get() == 'by SMILES match' or self.selected_angle_method.get() == 'by SMARTS match':
+            if self.selected_angle_method.get() == 'by SMARTS match':
+                vector_definition_method = 'sma'
+            if self.selected_angle_method.get() == 'by SMARTS match':
+                vector_definition_method = 'smi'
+            vec1 = self.group1_entry.get()
+            vec2 = self.group2_entry.get()
+
         
         if self.selected_angle_method.get() == 'None':
             # in the case that its 'None', just use some dummy atom coordinates.
@@ -320,34 +320,36 @@ class TabTwo(ttk.Frame):
             vector_definition_method = 'atoms'
             atoms = [0,1,2,3]
 
-        self.update_status_label("Analysing Conformers...\nPlease be patient")
-        if settings_dict['gaussian_job'] == True:
+        if self.settings_dict['gaussian_job'] == True:
             self.update_status_label("Running external Gaussian jobs...\nSee terminal for remaining time")
             
+        self.update_status_label("Analysing Conformers...\nPlease be patient")
         self.shared_data.energy,self.shared_data.angle = conformer.conf_analysis(
             mol_conf=self.shared_data.mol_conf,
             energy = self.shared_data.energy,
             vec_def_method=vector_definition_method,
             atom_idx_list=atoms,
             g_path = self.shared_data.gaussian_path,
-            vector1=vec1,
-            vector2=vec2,
-            name=job_name,
-            Gauss=settings_dict['gaussian_job'],
-            options=settings_dict['gaussian_options'],
-            cores=settings_dict['gaussian_nproc'],
-            ram=settings_dict['gaussian_vmem'],
+            vector1 = vec1,
+            vector2 = vec2,
+            name = self.shared_data.settings_entries[1].get(),
+            Gauss = self.settings_dict['gaussian_job'],
+            options = self.settings_dict['gaussian_options'],
+            cores = self.settings_dict['gaussian_nproc'],
+            ram = self.settings_dict['gaussian_vmem'],
             write_only = False # TO DO - this is hard coded if you ever want to expose it
         )
         if self.shared_data.angle:
             print('Successfully screened ' + str(len(self.shared_data.energy)) + ' conformers!')
             if self.shared_data.angle != []:
-                self.returned_fig,self.shared_data.delta_energy,self.shared_data.probability,self.hist_x,self.hist_y,xmax,fwhm = conformer.calc_bend_hist(self.shared_data.angle, 
-                                                        self.shared_data.energy, 
-                                                        fit_gaussian = True,
-                                                        name=self.shared_data.settings_entries[1].get(), 
-                                                        Temp=298, 
-                                                        BinSteps=10)
+                self.shared_data.delta_e , self.shared_data.probability = conformer.calc_bend_prob(self.shared_data.energy) # get initial value at arbitrary temperature
+            if len(self.shared_data.angle) != len(self.shared_data.probability):
+                print(f"Error: Mismatch in array lengths. Angles: {len(self.shared_data.angle)}, Probabilities: {len(self.shared_data.probability)}")
+                print([a for a in self.shared_data.angle])
+                print('*****')
+                print([p for p in self.shared_data.probability])
+                return
+                
             self.shared_data.property_dict = conformer.get_3d_descriptors(self.shared_data.mol_conf,self.shared_data.angle,self.shared_data.probability) # Get available properties from the property_dicts
             self.callback_handler.call_callbacks("data_updated") # notify tabs to update
             self.update_status_label(f"Conformer Generation Complete!\nGenerated {str(len(self.shared_data.energy))} conformers!")

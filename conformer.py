@@ -397,7 +397,17 @@ def generate_coords(extracted_geometry):
         
     return(coords)
     
-def calc_bend_hist(angle,energy,fit_gaussian=True,show_plot=False,name='NoName',Temp=298,BinSteps=10):
+def calc_bend_prob(energy, temperature = 298):
+    '''
+    calculates the probability and relative energies of a conformer library at the given temperature
+    '''
+    Kb = 0.008314 # Boltzmann's constant
+    delta_e_kj = (energy - np.min(energy))* 4.184
+    probability = np.exp(-delta_e_kj / (Kb * temperature )) / np.sum(np.exp(-delta_e_kj / (Kb * temperature )))
+    
+    return delta_e_kj, probability 
+    
+def calc_bend_hist(angle, energy, save_as_text=False, name='NoName',temperature=298, hist_bin_size=10):
     """
     This function calculates the Boltzmann probability of each conformer
     and creates a histogram of probability vs bend angle
@@ -407,66 +417,25 @@ def calc_bend_hist(angle,energy,fit_gaussian=True,show_plot=False,name='NoName',
     args:
     angle - array of angles for each conformer
     energy - array of energies of each conformer (in kcal / mol-1)
-    fit_gaussian (bool) - fit a gaussian to the histogram, or not?
-    show_plot - do we want to show the plot (true), or have it returned as a figure object (false)
+    save_as_text - write sprobabilities to text?
     name - the name of the material, used in saving
-    Temp - the temperature at which to calculate the probability
-    BinSteps - the size of the bins used in the histogram
+    temperature - the temperature at which to calculate the probability
+    hist_bin_size - the size of the bins used in the histogram
     
     returns:
+    delta_e - delta energy per conformer
+    probabiltiy - the probability of each confomer
+    x,y - histogrammed data of probability vs angle
     """
+    delta_e_kj, probability = calc_bend_prob(energy, temperature)
 
-    Kb = 0.008314 # Boltzmann's constant
-    deltaE_KJ = (energy - np.min(energy))* 4.184
-    probability = np.exp(-deltaE_KJ/(Kb*Temp)) / np.sum(np.exp(-deltaE_KJ/(Kb*Temp)))
-
-    y, x = np.histogram(angle, weights = probability,bins=np.arange(0,190,BinSteps))
+    y, x = np.histogram(angle, weights = probability,bins=np.arange(0,190,hist_bin_size))
+ 
+    if save_as_text == True:
+        with open(name + '_conformer_probability_.txt', 'w') as file:
+            file.write('\n'.join(str(probabilit) for probabilit in probability))
     
-    px = 1/plt.rcParams['figure.dpi']
-    fig = plt.figure(figsize=(600*px, 400*px))
-    plt.bar(x[:-1], y,width=BinSteps*0.9)
-    plt.xlabel('Bend Angle / Degrees')
-    plt.ylabel('Probability at ' + str(Temp) + ' K')
-    plt.xlim([0,180])
-    plt.ylim([0,1])
-    plt.title(name)
-    
-    if fit_gaussian == True:
-        gaussian_x,gaussian_y,x_max,fwhm = analyse_angles(y, x)
-        plt.plot(gaussian_x,gaussian_y,color='r')
-
-        # Plot the dashed line along the FWHM
-        plt.axvline(x_max, 
-                    linestyle='--', 
-                    color='g', 
-                    alpha=0.66, 
-                    label='Gaussian Max.')
-
-        # Calculate the half-max and 1.5x max y values
-        half_max = maths.gaussian(x_max, np.max(y), x_max, np.sqrt(fwhm / (2 * np.sqrt(2 * np.log(2)))))/2
-
-        # Plot the vertical line from half-max to 1.5x max y
-        plt.plot([x_max-fwhm/2,x_max+fwhm/2],[half_max,half_max],  
-                 linestyle='--', 
-                 color='g', 
-                 alpha=0.66, 
-                 label='FWHM')
-        
-    if fit_gaussian == False:
-        x_max = np.nan
-        fwhm = np.nan
-        
-    plt.savefig(name + 'prob_vs_angle.png', bbox_inches='tight')
-    
-    with open(name + '_conformer_probability_.txt', 'w') as file:
-        file.write('\n'.join(str(probabilit) for probabilit in probability))
-    
-    if show_plot == True:
-        plt.show()
-    else:
-        return (fig,deltaE_KJ,probability,x,y,x_max,fwhm)
-        
-    return(deltaE_KJ,probability,x,y)
+    return(delta_e_kj,probability,x,y)
 
 def analyse_angles(hist,bin_edges):
     """

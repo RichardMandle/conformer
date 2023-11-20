@@ -1,4 +1,5 @@
 import tkinter as tk
+import maths
 from tkinter import ttk, filedialog
 import conformer
 import csv
@@ -73,30 +74,59 @@ class TabThree(ttk.Frame):
             self.bin_value_label.config(text=f"Bins: {int(float(value))}")  # Convert to int to remove decimals
 
     def generate_histograms_and_plots(self):
-        num_bins = self.bin_slider.get()                        # Get the selected number of bins from the slider
-        temperature = float(self.temp_entry.get())              # Get user-input temperature
+        self.hist_bin_size = self.bin_slider.get()                        # Get the selected number of bins from the slider
+        self.temperature = float(self.temp_entry.get())              # Get user-input temperature
         
         if self.shared_data.angle == []:
             print('No conformer data present')
             return
             
         if self.shared_data.angle != []:
-            self.returned_fig,self.shared_data.delta_energy,self.shared_data.probability,self.hist_x,self.hist_y,xmax,fwhm = conformer.calc_bend_hist(self.shared_data.angle, 
+            self.shared_data.delta_energy, self.shared_data.probability, self.hist_x, self.hist_y, = conformer.calc_bend_hist(self.shared_data.angle, 
                                                     self.shared_data.energy, 
-                                                    fit_gaussian= self.fit_gaussian_var.get() == "Yes", 
+                                                    save_as_text = False,
                                                     name=self.shared_data.settings_entries[1].get(), 
-                                                    Temp=temperature, 
-                                                    BinSteps=num_bins)
-
+                                                    temperature=self.temperature, 
+                                                    hist_bin_size=self.hist_bin_size)
+            
+            self.returned_fig, self.fwhm, self.xmax = self.make_hist_plot(self.hist_x, 
+                                                            self.hist_y, 
+                                                            fit_gaussian = self.fit_gaussian_var.get() == "Yes",
+                                                            hist_bin_size = self.hist_bin_size,
+                                                            temperature = self.temperature)
+            
             for widget in self.canvas_histogram.winfo_children(): 
                 widget.destroy() # Destroy the previous canvas widgets to remove the previous plots
 
             canvas_img = FigureCanvasTkAgg(self.returned_fig, master=self.canvas_histogram)
             canvas_img.get_tk_widget().pack()
             
-            info_text = f"Mean Angle: {np.round(np.mean(self.shared_data.angle),2)}°\nMedian Angle: {np.round(np.median(self.shared_data.angle),2)}°\nFit X@Y(max): {xmax}°\nFit FWHM: {fwhm}"
+            info_text = f"Mean Angle: {np.round(np.mean(self.shared_data.angle),2)}°\nMedian Angle: {np.round(np.median(self.shared_data.angle),2)}°\nFit X@Y(max): {self.xmax}°\nFit FWHM: {self.fwhm}"
             self.conformer_angle_stats.config(text=info_text)
-
+    
+    def make_hist_plot(self, x, y, fit_gaussian,hist_bin_size,temperature):
+        px = 1/plt.rcParams['figure.dpi']
+        fig = plt.figure(figsize=(600*px, 400*px))
+        plt.bar(x[:-1], y,width=hist_bin_size*0.9)
+        plt.xlabel('Bend Angle / Degrees')
+        plt.ylabel('Probability at ' + str(temperature) + ' K')
+        plt.xlim([0,180])
+        plt.ylim([0,1])
+        
+        if fit_gaussian == True:
+            gaussian_x, gaussian_y, x_max, fwhm = conformer.analyse_angles(y, x)
+            plt.plot(gaussian_x, gaussian_y, color='r')
+        
+            plt.axvline(x_max, linestyle='--',  color='g', alpha=0.66, label='Gaussian Max.')
+            half_max = maths.gaussian(x_max, np.max(y), x_max, np.sqrt(fwhm / (2 * np.sqrt(2 * np.log(2)))))/2
+            plt.plot([x_max-fwhm/2,x_max+fwhm/2],[half_max,half_max], linestyle='--', color='g', alpha=0.66, label='FWHM')
+            
+        if fit_gaussian == False:
+            x_max = np.nan
+            fwhm = np.nan
+            
+        return fig, fwhm, x_max
+        
     def save_data_as_csv(self):
 
         file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV Files", "*.csv")])

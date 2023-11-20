@@ -36,8 +36,9 @@ class TabOne(ttk.Frame):
         self.create_ui_element(ttk.Button, 2, 1, "Save Conformer Session", self.save_session)
         self.create_ui_element(ttk.Button, 3, 1, "Load Conformer Session", self.load_session)
         self.create_ui_element(ttk.Button, 2, 2, "Generate Molecule", self.get_mol_from_text)
+        self.create_ui_element(ttk.Button, 3, 2, "Clear Atom Selection", self.clear_highlights)
 
-        self.canvas = tk.Canvas(self, width=775, height=400)
+        self.canvas = tk.Canvas(self, width=750, height=400)
         self.canvas.grid(row=4, column=1, columnspan=4, padx=10, pady=10, sticky='ew')
         self.canvas.bind("<Button-1>", self.get_nearest_atom)
     
@@ -115,22 +116,25 @@ class TabOne(ttk.Frame):
         if mol is not None:
             self.shared_data.loaded_mol = Chem.AddHs(mol)  # Store the loaded mol object and add hydrogens
             self.draw_molecule(clear_confs=True)  
-            
+    
+    def clear_highlights(self):
+        self.shared_data.highlights.clear() 
+        self.draw_molecule(clear_confs=False) 
+    
     def draw_molecule(self, clear_confs=True):
         if self.shared_data.loaded_mol is not None:
-            # set clear_confs to delete conformer data; useful when loading a new molecule, but not when loading a prev. session
             AllChem.Compute2DCoords(self.shared_data.loaded_mol,clearConfs=clear_confs) # clearConfs = False to avoid overwriting conformer data we already have for this mol object.
             
-            self.shared_data.drawer = rdMolDraw2D.MolDraw2DCairo(500, 300)
+            self.shared_data.drawer = rdMolDraw2D.MolDraw2DCairo(750, 300)
             
             if len(self.shared_data.highlights) == 0:
                 self.shared_data.drawer.DrawMolecule(self.shared_data.loaded_mol)
             
             if len(self.shared_data.highlights) > 0:
-                colors = [(0.0039, 0.8, 0.7176, 0.3),  # define some colours to use
-                        (0.9843, 0.0078, 0.4980, 0.3), 
-                        (1.0, 0.9843, 0.0, 0.3), 
-                        (0.2235, 0.2353, 1.0, 0.3)]
+                colors = [(0.0039, 0.8, 0.7176, 0.5),  # define some colours to use
+                        (0.9843, 0.0078, 0.4980, 0.5), 
+                        (1.0, 0.9843, 0.0, 0.5), 
+                        (0.2235, 0.2353, 1.0, 0.5)]
                         
                 athighlights = defaultdict(list)
                 arads = {}
@@ -139,7 +143,7 @@ class TabOne(ttk.Frame):
                     if a.GetIdx() in [x -1 for x in self.shared_data.highlights]:
                         aid = a.GetIdx()
                         athighlights[aid].append(colors[[x -1 for x in self.shared_data.highlights].index(a.GetIdx())])
-                        arads[aid] = 0.3
+                        arads[aid] = 1
                         
                 self.shared_data.drawer.DrawMoleculeWithHighlights(self.shared_data.loaded_mol,"",dict(athighlights),{},arads,{})
                 
@@ -170,7 +174,7 @@ class TabOne(ttk.Frame):
         if nearest_atom is not None:
             self.shared_data.highlights.append(nearest_atom+1)
             if len(self.shared_data.highlights) == 5: # reset list if it has 5 entries
-                self.shared_data.highlights = [nearest_atom+1]
+                self.clear_highlights()
                 
             self.draw_molecule(clear_confs=False)
             
