@@ -40,17 +40,17 @@ Many liquid crystalline materials can adopt multiple conformations, however for 
 * Again, you can export data as .csv or save the plot as .png.
   <br>
 * In the "View Conformers" tab we can do a quick inspection of the 3D geometry of our various conformers. A slider lets us select different conformers, and we can save the information to .sdf file for later retrieval. There is an interface with PyMol (which is very slow). It is _much faster_ to save the conformers as a .sdf file and reload into PyMol that way. You can use any visualisation software of course, but PyMol, VMD and QuteMol make especially nice images. Check boxes for raytracing, grid_image and default image style of the University of Leeds Soft Matter Physics group (UoL-SMP) change the appearance of the resulting image. a box has some information on the selected conformer
-  ![image](https://github.com/RichardMandle/conformer/assets/101199234/35ac77d0-edfd-4aa2-a7c7-23e5bb75a186)<br>
+* ![image](https://github.com/RichardMandle/conformer/assets/101199234/35ac77d0-edfd-4aa2-a7c7-23e5bb75a186)<br>
 * The PyMol interface can make nice images; of course, this is an interactive process, but to give an idea of the sort of output the 'default' options (raytrace=True,grid_image=True,UoL-SMP=True) give see below for the LC trimer CBO6B6OCB:
-  ![image](https://github.com/RichardMandle/conformer/assets/101199234/e28d11ce-0466-46ed-bbd9-a7823529e810)<br>
+* ![image](https://github.com/RichardMandle/conformer/assets/101199234/e28d11ce-0466-46ed-bbd9-a7823529e810)<br>
 
 ## Citation
 This work is described in Mandle _et al_ "Rapid Conformational Analysis of Semi-Flexible Liquid Crystals", however the following papers should also be cited if you make use of this softare tool:
 
-*Riniker, S.; Landrum, G.A.J.J.o.c.i.; modeling. Better informed distance geometry: Using what we know to improve conformation generation. 2015, 55, 2562-2574.
-*Vainio, M.J.; Johnson, M.S.J.J.o.c.i.; modeling. Generating conformer ensembles using a multiobjective genetic algorithm. 2007, 47, 2462-2474.
-*Wang, S.; Witek, J.; Landrum, G.A.; Riniker, S. Improving conformer generation for small rings and macrocycles based on distance geometry and experimental torsional-angle preferences. J Chem Inf Model 2020, 60, 2044-2058.
-*Landrum, G. Rdkit: Open-source cheminformatics. 2006.
+* Riniker, S.; Landrum, G.A.J.J.o.c.i.; modeling. Better informed distance geometry: Using what we know to improve conformation generation. 2015, 55, 2562-2574.
+* Vainio, M.J.; Johnson, M.S.J.J.o.c.i.; modeling. Generating conformer ensembles using a multiobjective genetic algorithm. 2007, 47, 2462-2474.
+* Wang, S.; Witek, J.; Landrum, G.A.; Riniker, S. Improving conformer generation for small rings and macrocycles based on distance geometry and experimental torsional-angle preferences. J Chem Inf Model 2020, 60, 2044-2058.
+* Landrum, G. Rdkit: Open-source cheminformatics. 2006.
 
 
 Any comments/questions/requests email r<dot>mandle<at>leeds<dot>ac<dot>uk
