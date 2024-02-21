@@ -271,7 +271,7 @@ def conf_analysis(mol_conf,
             
         print('\nCalculating bend-angle based on a vector between atoms ' +
             str(atom_idx_list[0:2]) + ' and ' + str(atom_idx_list[2:4]) + '\n')
-            
+
         for i in range(0,mol_conf.GetNumConformers()):
             angle.append(find_dimer_angle(mol_conf, atom_idx_list, conf_id=i))
             

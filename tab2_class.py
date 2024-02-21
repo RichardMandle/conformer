@@ -288,6 +288,10 @@ class TabTwo(ttk.Frame):
     def conformer_analysis_logic(self):
         # this function splits the analysis logic from the conformer generation logic so we can recompute as needed
         #print(self.shared_data.mol_conf.GetNumConformers())
+        
+        if 'self.settings_dict' not in locals(): #if none (we reloaded data) then just retrieve the defaults here
+            self.settings_dict= conformer.get_default_search_settings()
+        
         if self.shared_data.angle != []:
             self.shared_data.angle = [] # clear existing angle data.
             self.shared_data.probability = [] # clear existing probability data.
@@ -339,15 +343,16 @@ class TabTwo(ttk.Frame):
             ram = self.settings_dict['gaussian_vmem'],
             write_only = False # TO DO - this is hard coded if you ever want to expose it
         )
+        # to do - when reloading we aren't getting angle data for all conformers...
         if self.shared_data.angle:
             print('Successfully screened ' + str(len(self.shared_data.energy)) + ' conformers!')
             if self.shared_data.angle != []:
                 self.shared_data.delta_e , self.shared_data.probability = conformer.calc_bend_prob(self.shared_data.energy) # get initial value at arbitrary temperature
             if len(self.shared_data.angle) != len(self.shared_data.probability):
                 print(f"Error: Mismatch in array lengths. Angles: {len(self.shared_data.angle)}, Probabilities: {len(self.shared_data.probability)}")
-                print([a for a in self.shared_data.angle])
+                #print([a for a in self.shared_data.angle])
                 print('*****')
-                print([p for p in self.shared_data.probability])
+                #print([p for p in self.shared_data.probability])
                 return
                 
             self.shared_data.property_dict = conformer.get_3d_descriptors(self.shared_data.mol_conf,self.shared_data.angle,self.shared_data.probability) # Get available properties from the property_dicts
