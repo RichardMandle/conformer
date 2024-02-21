@@ -26,12 +26,13 @@ Many liquid crystalline materials can adopt multiple conformations, however for 
   ![image](https://github.com/RichardMandle/conformer/assets/101199234/a2e8454d-e471-4f14-9a9c-d385aa14f983)
 <br>
 * In the "conformer search" tab set your desired options. Number of conformers to screen, the desired method used to generate conformers, the title of your job, and the evaluation method. You can specify the groups that define the vectors as smiles/smarts strings here if you prefer. We evaluate the energy of each conformer; you can use the inbuilt "MMFF" method which is fast. The advanced settings button lets you customise the conformer search options even more:
-  ![image](https://github.com/RichardMandle/conformer/assets/101199234/aaaf5cb8-30b5-49eb-8ebd-f46444269429)<br>
+![image](https://github.com/RichardMandle/conformer/assets/101199234/043309f4-9ddf-4385-a81b-e55df3bd3297)
+
 * ... Or you can run an external calculation through Gaussian (you need to set the path to the Gaussian executable in 'Settings'). This has a few extra options, method, number of CPU cores, ammount of RAM. If you select an "opt" job then the conformers will be optimised with your chosen method (after the RMS pruning etc.)
 * Once the "Start Conformer Search" button is pressed you the conformer search begins. The window text will change from "Conformer generation in progress" to "Conformer generation complete" when finished; any errors will appear in the terminal.
   <br>
 * Once complete we can navigate to the "Analysis #1" tab to visualise the first of our results as a histogram of probability of a given bend angle. A slider controls the bin width of the histogram, and you can specify the temperature (in K) used in the probability calculation. You can fit a Gaussian to the data, save the data (or histogram data) as .csv, or even just straight to .png. Some basic stats are also printed (mean angle, median angle etc.):
-![image](https://github.com/RichardMandle/conformer/assets/101199234/20f40b80-ddca-4a41-b244-edf432e406dc)
+![image](https://github.com/RichardMandle/conformer/assets/101199234/32e13df2-90cd-438f-867a-1dc1d35b7447)
 
 * You can change some options on the plot and save the data (or histogram data) to .csv for proper plotting using other tools. You can save the plot shown in the Conformer gui tool if you like with "Save Plot as PNG".
 * What at it you clicked the wrong atoms when defining the bend angle? No problem! Just navigate back to the first tab (Load/Save Molecule), reselect your atoms. Go to tab 2, click "recalculate bend angle". Done, and quickly too.
