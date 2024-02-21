@@ -1,4 +1,3 @@
-![image](https://github.com/RichardMandle/conformer/assets/101199234/f3f93b59-ba1c-43b6-9bca-8e42b25973c3)# conformer
 Repo for LC conformational analysis tool.
 <br><br>
 Current version - V 1.0:<br> 
