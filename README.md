@@ -26,7 +26,7 @@ Many liquid crystalline materials can adopt multiple conformations, however for 
   ![image](https://github.com/RichardMandle/conformer/assets/101199234/a2e8454d-e471-4f14-9a9c-d385aa14f983)
 <br>
 * In the "conformer search" tab set your desired options. Number of conformers to screen, the desired method used to generate conformers, the title of your job, and the evaluation method. You can specify the groups that define the vectors as smiles/smarts strings here if you prefer. We evaluate the energy of each conformer; you can use the inbuilt "MMFF" method which is fast. The advanced settings button lets you customise the conformer search options even more:
-![image](https://github.com/RichardMandle/conformer/assets/101199234/043309f4-9ddf-4385-a81b-e55df3bd3297)
+![image](https://github.com/RichardMandle/conformer/assets/101199234/19f3f7e6-7384-4cc1-b5dc-729b5ac35fec)
 
 * ... Or you can run an external calculation through Gaussian (you need to set the path to the Gaussian executable in 'Settings'). This has a few extra options, method, number of CPU cores, ammount of RAM. If you select an "opt" job then the conformers will be optimised with your chosen method (after the RMS pruning etc.)
 * Once the "Start Conformer Search" button is pressed you the conformer search begins. The window text will change from "Conformer generation in progress" to "Conformer generation complete" when finished; any errors will appear in the terminal.
