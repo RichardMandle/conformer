@@ -9,12 +9,13 @@ Future Plans:
 <br><br>
 
 ## Background
-Many liquid crystalline materials can adopt multiple conformations, however for various reasons this is often neglected in computational treatment. This software tool is designed as a simple means to rapidly generate multiple conformers of semi-flexible molecules (such as liquid crystals) using rules-based methods embedded in rdkit. 
-<br>
+Many liquid crystalline materials can adopt multiple conformations, however for various reasons this is often neglected in computational treatment which typically focuses on a single conformation. This software tool is designed as a simple means to rapidly generate multiple conformers of semi-flexible molecules (such as liquid crystals) using rules-based methods embedded in rdkit. While primarily intended as a grapical means to explore the overall shape of liquid crystalline dimers and oligomers, the conformer tool is a easy way to access the powerful Rdkit conformer generation engine and can be applied to any system of interest.
 
 ## Installation 
+* This tool is written in Python, so if you are on Windows you'll need to have a working Python install. You could use Anaconda for simplicity.
+* With python instaled, navigate to the conformer directory. 
 * Install dependent packages with conda (rdkit, numpy, matplotlib, tkinter, tqdm; you can do this with <br><br>```pip install -r requirements.txt```<br><br>
-<br>
+
 ## Usage
 * Launch the gui:<br><br>``` python gui.py ```<br><br>
 ![image](https://github.com/RichardMandle/conformer/assets/101199234/3dc3c54c-4ebf-4749-941c-f4d8f712f35a)
@@ -44,6 +45,13 @@ Many liquid crystalline materials can adopt multiple conformations, however for 
 * The PyMol interface can make nice images; of course, this is an interactive process, but to give an idea of the sort of output the 'default' options (raytrace=True,grid_image=True,UoL-SMP=True) give see below for the LC trimer CBO6B6OCB:
 * ![image](https://github.com/RichardMandle/conformer/assets/101199234/e28d11ce-0466-46ed-bbd9-a7823529e810)
 
-Voila!
+## Citation
+This work is described in Mandle _et al_ "Rapid Conformational Analysis of Semi-Flexible Liquid Crystals", however the following papers should also be cited if you make use of this softare tool:
+
+*Riniker, S.; Landrum, G.A.J.J.o.c.i.; modeling. Better informed distance geometry: Using what we know to improve conformation generation. 2015, 55, 2562-2574.
+*Vainio, M.J.; Johnson, M.S.J.J.o.c.i.; modeling. Generating conformer ensembles using a multiobjective genetic algorithm. 2007, 47, 2462-2474.
+*Wang, S.; Witek, J.; Landrum, G.A.; Riniker, S. Improving conformer generation for small rings and macrocycles based on distance geometry and experimental torsional-angle preferences. J Chem Inf Model 2020, 60, 2044-2058.
+*Landrum, G. Rdkit: Open-source cheminformatics. 2006.
+
 
 Any comments/questions/requests email r<dot>mandle<at>leeds<dot>ac<dot>uk
