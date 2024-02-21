@@ -31,18 +31,22 @@ Many liquid crystalline materials can adopt multiple conformations, however for 
 * Once the "Start Conformer Search" button is pressed you the conformer search begins. The window text will change from "Conformer generation in progress" to "Conformer generation complete" when finished; any errors will appear in the terminal.
   <br>
 * Once complete we can navigate to the "Analysis #1" tab to visualise the first of our results as a histogram of probability of a given bend angle. A slider controls the bin width of the histogram, and you can specify the temperature (in K) used in the probability calculation. You can fit a Gaussian to the data, save the data (or histogram data) as .csv, or even just straight to .png. Some basic stats are also printed (mean angle, median angle etc.):
-  ![image](https://github.com/RichardMandle/conformer/assets/101199234/bf78c99e-78bf-44dd-ae5b-f2551f58b12c)<br>
+![image](https://github.com/RichardMandle/conformer/assets/101199234/20f40b80-ddca-4a41-b244-edf432e406dc)
+
 * You can change some options on the plot and save the data (or histogram data) to .csv for proper plotting using other tools. You can save the plot shown in the Conformer gui tool if you like with "Save Plot as PNG".
 * What at it you clicked the wrong atoms when defining the bend angle? No problem! Just navigate back to the first tab (Load/Save Molecule), reselect your atoms. Go to tab 2, click "recalculate bend angle". Done, and quickly too.
   <br>
 * On the "Analysis #2" tab we can plot various 3d descriptors from rdkit against bend angle (useful) or against each other (less useful I think). Basic options control ploting, saving to .csv (I'll add .png later), and optional fitting with a 1,2,3,4 order polynomial:
-  ![image](https://github.com/RichardMandle/conformer/assets/101199234/72c81538-5492-4e50-b133-1bbce2efd4f1)<br>
+![image](https://github.com/RichardMandle/conformer/assets/101199234/d5cd44c0-3020-4778-857b-3e7275a25ad3)
+
 * Again, you can export data as .csv or save the plot as .png.
   <br>
 * In the "View Conformers" tab we can do a quick inspection of the 3D geometry of our various conformers. A slider lets us select different conformers, and we can save the information to .sdf file for later retrieval. There is an interface with PyMol (which is very slow). It is _much faster_ to save the conformers as a .sdf file and reload into PyMol that way. You can use any visualisation software of course, but PyMol, VMD and QuteMol make especially nice images. Check boxes for raytracing, grid_image and default image style of the University of Leeds Soft Matter Physics group (UoL-SMP) change the appearance of the resulting image. a box has some information on the selected conformer
-* ![image](https://github.com/RichardMandle/conformer/assets/101199234/35ac77d0-edfd-4aa2-a7c7-23e5bb75a186)<br>
+![image](https://github.com/RichardMandle/conformer/assets/101199234/836b0426-48cc-4995-833b-6bb46cff8a71)
+
 * The PyMol interface can make nice images; of course, this is an interactive process, but to give an idea of the sort of output the 'default' options (raytrace=True,grid_image=True,UoL-SMP=True) give see below for the LC trimer CBO6B6OCB:
-* ![image](https://github.com/RichardMandle/conformer/assets/101199234/e28d11ce-0466-46ed-bbd9-a7823529e810)<br>
+![image](https://github.com/RichardMandle/conformer/assets/101199234/1dd3e07a-7881-4e12-87d9-d9a6744baded)
+
 
 ## Citation
 This work is described in Mandle _et al_ "Rapid Conformational Analysis of Semi-Flexible Liquid Crystals", however the following papers should also be cited if you make use of this softare tool:
