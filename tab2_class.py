@@ -244,11 +244,9 @@ class TabTwo(ttk.Frame):
         
     def conformer_generation_logic(self):
         local_mol = Chem.Mol(self.shared_data.loaded_mol) # COPY the mol object so we don't break it with reselecting things later.
-        # pretty sure this could be neater/smaller/more obvious.
-
         self.settings_dict = conformer.get_default_search_settings() # retrieve the search defaults from conformer.pymol
-        
-        if self.selected_eval_method.get()  == self.eval_methods[-1]: # if its the gaussian method then do this
+
+        if self.selected_eval_method.get()  == 'Gaussian (external)': # if its the gaussian method then do this
             self.settings_dict['gaussian_job'] = True 
             self.settings_dict['gaussian_options'] = self.additional_settings_widgets[1].get()
             self.settings_dict['gaussian_nproc'] = self.additional_settings_widgets[3].get()
@@ -287,10 +285,9 @@ class TabTwo(ttk.Frame):
         
     def conformer_analysis_logic(self):
         # this function splits the analysis logic from the conformer generation logic so we can recompute as needed
-        #print(self.shared_data.mol_conf.GetNumConformers())
-        
-        if 'self.settings_dict' not in locals(): #if none (we reloaded data) then just retrieve the defaults here
-            self.settings_dict= conformer.get_default_search_settings()
+        if not hasattr(self, 'settings_dict'):  # Check if self has settings_dict
+            print('using default settings')
+            self.settings_dict = conformer.get_default_search_settings()
         
         if self.shared_data.angle != []:
             self.shared_data.angle = [] # clear existing angle data.
@@ -299,7 +296,6 @@ class TabTwo(ttk.Frame):
         atoms=[]
         vec1 = ''
         vec2 = ''
-
         if self.settings_dict['opt'] == True:
             print('Doing MMFF optimisation')
                             
@@ -326,7 +322,7 @@ class TabTwo(ttk.Frame):
 
         if self.settings_dict['gaussian_job'] == True:
             self.update_status_label("Running external Gaussian jobs...\nSee terminal for remaining time")
-            
+        ###print(self.settings_dict)    
         self.update_status_label("Analysing Conformers...\nPlease be patient")
         self.shared_data.energy,self.shared_data.angle = conformer.conf_analysis(
             mol_conf=self.shared_data.mol_conf,

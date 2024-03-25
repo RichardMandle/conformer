@@ -41,13 +41,13 @@ class TabSix(ttk.Frame):
     def browse_gaussian(self, entry):
         file_path = filedialog.askopenfilename(filetypes=[("Executable files", "*.exe")])
         if file_path:
-            entry.delete(0, ttk.END)
+            entry.delete(0, tk.END)
             entry.insert(0, file_path)
 
     def browse_pymol(self, entry):
         file_path = filedialog.askopenfilename(filetypes=[("Executable files", "*.exe")])
         if file_path:
-            entry.delete(0, ttk.END)
+            entry.delete(0, tk.END)
             entry.insert(0, file_path)  
 
     def save_settings(self, gaussian_path, pymol_path):
